@@ -102,7 +102,7 @@ export function FindMechanicsPage() {
         </div>
       </div>
       <label className="flex cursor-pointer items-center gap-2 text-sm font-medium text-navy-700">
-        <input type="checkbox" checked={availableOnly} onChange={(e) => setAvailableOnly(e.target.checked)} className="h-4 w-4 accent-[#B8862B]" />
+        <input type="checkbox" checked={availableOnly} onChange={(e) => setAvailableOnly(e.target.checked)} className="h-4 w-4 accent-[#D62828]" />
         Available now only
       </label>
       <button onClick={clear} className="btn-outline w-full">
