@@ -39,7 +39,7 @@ export function LoginPage() {
         <div className="w-full max-w-md">
           <div className="card p-8 animate-slide-up">
             <h1 className="text-2xl font-bold text-navy-700">Welcome back</h1>
-            <p className="mt-1.5 text-sm text-navy-400">Log in to your MechanicMate account.</p>
+            <p className="mt-1.5 text-sm text-navy-400">Log in to your GaariFix account.</p>
 
             {error && (
               <div className="mt-5 flex items-start gap-2.5 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">
@@ -147,7 +147,7 @@ export function SignupPage() {
               <CheckCircle2 className="h-7 w-7" />
             </div>
             <h1 className="mt-4 text-xl font-bold text-navy-700">Account created!</h1>
-            <p className="mt-2 text-sm text-navy-400">Welcome to MechanicMate. Redirecting you to your dashboard…</p>
+            <p className="mt-2 text-sm text-navy-400">Welcome to GaariFix. Redirecting you to your dashboard…</p>
             <Spinner className="mx-auto mt-4 h-5 w-5" />
           </div>
         </div>

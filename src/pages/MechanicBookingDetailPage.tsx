@@ -10,6 +10,7 @@ import { EmptyState } from '@/components/EmptyState';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from '@/context/RouterContext';
 import { supabase } from '@/lib/supabase';
+import { acceptBooking, declineDirectBooking } from '@/lib/mechanics';
 import { formatPKR } from '@/lib/constants';
 import type { Booking, BookingStatusHistory, Review } from '@/types';
 
@@ -254,8 +255,8 @@ export function MechanicBookingDetailPage({ bookingId }: { bookingId: string }) 
           </div>
         )}
 
-        {booking.status === 'pending' && !booking.mechanic_id && (
-          <AcceptSection bookingId={booking.id} onAccepted={loadBooking} onReject={handleReject} />
+        {booking.status === 'pending' && (!booking.mechanic_id || booking.mechanic_id === user?.id) && (
+          <AcceptSection booking={booking} onAccepted={loadBooking} onReject={handleReject} />
         )}
 
         {/* Recent reviews */}
@@ -279,22 +280,36 @@ export function MechanicBookingDetailPage({ bookingId }: { bookingId: string }) 
   );
 }
 
-function AcceptSection({ bookingId, onAccepted, onReject }: { bookingId: string; onAccepted: () => void; onReject: () => void }) {
+function AcceptSection({ booking, onAccepted, onReject }: { booking: Booking; onAccepted: () => void; onReject: () => void }) {
+  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const isDirect = booking.mechanic_id === user?.id;
 
   const handleAccept = async () => {
     setLoading(true); setError(null);
-    const { error } = await supabase.rpc('claim_booking', { p_booking_id: bookingId });
+    const err = await acceptBooking(booking, user!.id);
     setLoading(false);
-    if (error) { setError(error.message); return; }
+    if (err) { setError(err); return; }
+    onAccepted();
+  };
+
+  const handleDecline = async () => {
+    setLoading(true); setError(null);
+    const err = await declineDirectBooking(booking.id, user!.id);
+    setLoading(false);
+    if (err) { setError(err); return; }
     onAccepted();
   };
 
   return (
     <div className="mt-6 flex items-center justify-end gap-3">
       {error && <p className="text-sm text-red-600">{error}</p>}
-      <button onClick={onReject} className="btn-outline">Skip</button>
+      {isDirect ? (
+        <button onClick={handleDecline} disabled={loading} className="btn-outline">Decline</button>
+      ) : (
+        <button onClick={onReject} className="btn-outline">Skip</button>
+      )}
       <button onClick={handleAccept} disabled={loading} className="btn-primary">
         {loading ? <Spinner className="h-4 w-4" /> : <><CheckCircle2 className="h-4 w-4" /> Accept job</>}
       </button>

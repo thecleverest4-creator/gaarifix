@@ -186,7 +186,7 @@ export function MechanicRegisterPage() {
       <div className="mx-auto max-w-2xl px-4 py-8 sm:px-6 lg:px-8">
         <div className="mb-6 text-center">
           <h1 className="text-2xl font-bold text-navy-700">Become a Mechanic</h1>
-          <p className="mt-1.5 text-sm text-navy-400">Join MechanicMate and start receiving customer bookings.</p>
+          <p className="mt-1.5 text-sm text-navy-400">Join GaariFix and start receiving customer bookings.</p>
         </div>
 
         {/* Stepper */}

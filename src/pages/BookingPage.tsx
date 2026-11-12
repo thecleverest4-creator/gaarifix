@@ -12,12 +12,17 @@ import { useRouter } from '@/context/RouterContext';
 import { supabase } from '@/lib/supabase';
 import { PAKISTAN_CITIES, TIME_SLOTS, formatPKR } from '@/lib/constants';
 import type { Vehicle, Service, Booking } from '@/types';
+import { PUBLIC_MECHANIC_COLS, type PublicMechanic } from '@/lib/mechanics';
+import { BadgeCheck } from 'lucide-react';
 
 const STEPS = ['Vehicle', 'Service', 'Problem', 'Location', 'Schedule', 'Review'];
 
 export function BookingPage() {
   const { user, profile } = useAuth();
-  const { navigate } = useRouter();
+  const { navigate, query } = useRouter();
+  const chosenMechanicUserId = query.get('mechanic');
+  const serviceSlug = query.get('service');
+  const [chosenMechanic, setChosenMechanic] = useState<PublicMechanic | null>(null);
   const [step, setStep] = useState(0);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [services, setServices] = useState<Service[]>([]);
@@ -27,7 +32,7 @@ export function BookingPage() {
   const [selectedVehicleId, setSelectedVehicleId] = useState<string>('');
   const [showAddVehicle, setShowAddVehicle] = useState(false);
   const [selectedServiceId, setSelectedServiceId] = useState<string>('');
-  const [problem, setProblem] = useState('');
+  const [problem, setProblem] = useState(query.get('problem') ?? '');
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [city, setCity] = useState('Karachi');
   const [area, setArea] = useState('');
@@ -49,10 +54,22 @@ export function BookingPage() {
         supabase.from('services').select('*').eq('is_active', true).order('name'),
       ]);
       if (vRes.data) setVehicles(vRes.data as Vehicle[]);
-      if (sRes.data) setServices(sRes.data as Service[]);
+      if (sRes.data) {
+        setServices(sRes.data as Service[]);
+        const pre = (sRes.data as Service[]).find((s) => s.slug === serviceSlug);
+        if (pre) setSelectedServiceId(pre.id);
+      }
+      if (chosenMechanicUserId) {
+        const { data: m } = await supabase.from('mechanics').select(PUBLIC_MECHANIC_COLS).eq('user_id', chosenMechanicUserId).maybeSingle();
+        const mech = m as PublicMechanic | null;
+        if (mech && mech.verification_status === 'approved' && !mech.is_suspended) {
+          setChosenMechanic(mech);
+          setCity(mech.city);
+        }
+      }
       setLoading(false);
     })();
-  }, [user]);
+  }, [user, chosenMechanicUserId, serviceSlug]);
 
   const selectedService = services.find((s) => s.id === selectedServiceId);
   const selectedVehicle = vehicles.find((v) => v.id === selectedVehicleId);
@@ -88,6 +105,8 @@ export function BookingPage() {
 
     const payload = {
       customer_id: user!.id,
+      // When the customer picked a specific mechanic, the request goes only to them.
+      mechanic_id: chosenMechanic?.user_id ?? null,
       service_id: selectedServiceId,
       vehicle_id: selectedVehicleId || null,
       problem_description: problem.trim(),
@@ -118,7 +137,11 @@ export function BookingPage() {
               <CheckCircle2 className="h-8 w-8" />
             </div>
             <h1 className="mt-5 text-2xl font-bold text-navy-700">Booking Confirmed!</h1>
-            <p className="mt-2 text-sm text-navy-400">Your service request has been submitted. A verified mechanic will accept it shortly.</p>
+            <p className="mt-2 text-sm text-navy-400">
+              {chosenMechanic
+                ? `Your request has been sent to ${chosenMechanic.workshop_name || chosenMechanic.full_name}. They will confirm shortly.`
+                : 'Your service request has been submitted. A verified mechanic will accept it shortly.'}
+            </p>
             <div className="mt-6 rounded-xl bg-navy-50 px-6 py-4">
               <p className="text-xs uppercase tracking-wider text-navy-300">Booking ID</p>
               <p className="mt-1 font-mono text-lg font-bold text-navy-700">{confirmation.booking_ref}</p>
@@ -152,6 +175,17 @@ export function BookingPage() {
       </header>
 
       <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 lg:px-8">
+        {chosenMechanic && (
+          <div className="mb-6 flex items-center gap-3 rounded-2xl border border-orange-200 bg-orange-50 px-4 py-3">
+            <BadgeCheck className="h-6 w-6 shrink-0 text-orange-500" />
+            <p className="flex-1 text-sm text-navy-700">
+              Booking with <b>{chosenMechanic.workshop_name || chosenMechanic.full_name}</b> · ★ {Number(chosenMechanic.rating_avg).toFixed(1)} · {chosenMechanic.city}
+            </p>
+            <button onClick={() => { setChosenMechanic(null); navigate('/book'); }} className="text-xs font-semibold text-navy-500 underline">
+              Any mechanic instead
+            </button>
+          </div>
+        )}
         {/* Stepper */}
         <div className="mb-8 flex items-center justify-between">
           {STEPS.map((label, i) => (
@@ -325,6 +359,7 @@ export function BookingPage() {
               <p className="mt-1 text-sm text-navy-400">Please confirm your booking details.</p>
               {error && <div className="mt-4 flex items-start gap-2.5 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700"><AlertCircle className="mt-0.5 h-4 w-4 shrink-0" /> {error}</div>}
               <div className="mt-5 space-y-4">
+                <ReviewRow icon={<BadgeCheck className="h-5 w-5" />} label="Mechanic" value={chosenMechanic ? `${chosenMechanic.workshop_name || chosenMechanic.full_name} (${chosenMechanic.city})` : 'First available verified mechanic'} />
                 <ReviewRow icon={<Car className="h-5 w-5" />} label="Vehicle" value={selectedVehicle ? `${selectedVehicle.make} ${selectedVehicle.model} (${selectedVehicle.year})` : '—'} />
                 <ReviewRow icon={<Wrench className="h-5 w-5" />} label="Service" value={selectedService?.name ?? '—'} />
                 <ReviewRow icon={<Wrench className="h-5 w-5" />} label="Estimated price" value={selectedService ? formatPKR(selectedService.starting_price) : '—'} />

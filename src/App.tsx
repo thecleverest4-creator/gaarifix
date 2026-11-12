@@ -11,19 +11,25 @@ import { MechanicRegisterPage } from '@/pages/MechanicRegisterPage';
 import { MechanicDashboard } from '@/pages/MechanicDashboard';
 import { MechanicBookingDetailPage } from '@/pages/MechanicBookingDetailPage';
 import { AdminDashboard } from '@/pages/AdminDashboard';
+import { FindMechanicsPage } from '@/pages/FindMechanicsPage';
+import { MechanicProfilePage } from '@/pages/MechanicProfilePage';
+import { AiHelperPage } from '@/pages/AiHelperPage';
+import { setNextAfterLogin, takeNextAfterLogin } from '@/lib/mechanics';
 
 function AppRoutes() {
   const { profile, loading } = useAuth();
   const { path, navigate } = useRouter();
 
   // While the initial auth/session check is running, show a loading state.
-  if (loading) return <FullPageSpinner label="Loading MechanicMate…" />;
+  if (loading) return <FullPageSpinner label="Loading GaariFix…" />;
 
   const role = profile?.role ?? null;
 
   // Helper to guard a route for a specific role
   const guard = (allowed: ('customer' | 'mechanic' | 'admin')[], element: React.ReactNode): React.ReactNode => {
     if (!profile) {
+      // come back here (e.g. to the chosen mechanic's booking) after login
+      setNextAfterLogin(window.location.hash.replace(/^#/, ''));
       navigate('/login');
       return <FullPageSpinner />;
     }
@@ -36,16 +42,24 @@ function AppRoutes() {
 
   // Public routes
   if (path === '/' || path === '') return <HomePage />;
+  if (path === '/mechanics') return <FindMechanicsPage />;
+  const mechanicProfileMatch = matchPath('/mechanics/:id', path);
+  if (mechanicProfileMatch) return <MechanicProfilePage mechanicId={mechanicProfileMatch.id} />;
+  if (path === '/help') return <AiHelperPage />;
+
+  const home = role === 'admin' ? '/admin' : role === 'mechanic' ? '/mechanic/dashboard' : '/dashboard';
   if (path === '/login') {
     if (profile) {
-      navigate(role === 'admin' ? '/admin' : role === 'mechanic' ? '/mechanic/dashboard' : '/dashboard');
+      const next = takeNextAfterLogin();
+      navigate(next && role === 'customer' ? next : home);
       return <FullPageSpinner />;
     }
     return <LoginPage />;
   }
   if (path === '/signup') {
     if (profile) {
-      navigate(role === 'admin' ? '/admin' : role === 'mechanic' ? '/mechanic/dashboard' : '/dashboard');
+      const next = takeNextAfterLogin();
+      navigate(next && role === 'customer' ? next : home);
       return <FullPageSpinner />;
     }
     return <SignupPage />;

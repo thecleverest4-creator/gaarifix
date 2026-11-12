@@ -2,21 +2,34 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from '
 
 interface RouterContextValue {
   path: string;
+  /** Query string params from the hash, e.g. #/book?mechanic=123 */
+  query: URLSearchParams;
   navigate: (to: string) => void;
 }
 
 const RouterContext = createContext<RouterContextValue | undefined>(undefined);
 
+function currentHash(): string {
+  return window.location.hash.replace(/^#/, '') || '/';
+}
+
 function currentPath(): string {
-  const hash = window.location.hash.replace(/^#/, '');
-  return hash || '/';
+  return currentHash().split('?')[0] || '/';
+}
+
+function currentQuery(): URLSearchParams {
+  return new URLSearchParams(currentHash().split('?')[1] ?? '');
 }
 
 export function RouterProvider({ children }: { children: ReactNode }) {
   const [path, setPath] = useState<string>(currentPath());
+  const [query, setQuery] = useState<URLSearchParams>(currentQuery());
 
   useEffect(() => {
-    const onHashChange = () => setPath(currentPath());
+    const onHashChange = () => {
+      setPath(currentPath());
+      setQuery(currentQuery());
+    };
     window.addEventListener('hashchange', onHashChange);
     // ensure a hash exists so navigation works from the start
     if (!window.location.hash) {
@@ -27,7 +40,7 @@ export function RouterProvider({ children }: { children: ReactNode }) {
 
   const navigate = (to: string) => {
     const target = to.startsWith('/') ? to : `/${to}`;
-    if (currentPath() === target) {
+    if (currentHash() === target) {
       // force a re-render even when navigating to the same path
       setPath(target);
       return;
@@ -37,7 +50,7 @@ export function RouterProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <RouterContext.Provider value={{ path, navigate }}>
+    <RouterContext.Provider value={{ path, query, navigate }}>
       {children}
     </RouterContext.Provider>
   );

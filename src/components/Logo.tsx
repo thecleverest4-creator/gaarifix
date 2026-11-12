@@ -13,13 +13,13 @@ export function Logo({ variant = 'dark', onClick }: LogoProps) {
     <button
       onClick={onClick ?? (() => navigate('/'))}
       className="flex items-center gap-2.5 group"
-      aria-label="MechanicMate home"
+      aria-label="GaariFix home"
     >
       <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-orange-500 text-white shadow-sm transition-transform group-hover:scale-105">
         <Wrench className="h-5 w-5" strokeWidth={2.5} />
       </span>
       <span className={`text-lg font-bold tracking-tight ${textColor}`}>
-        Mechanic<span className="text-orange-500">Mate</span>
+        Gaari<span className="text-orange-500">Fix</span>
       </span>
     </button>
   );

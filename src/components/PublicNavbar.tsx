@@ -5,7 +5,8 @@ import { useRouter } from '@/context/RouterContext';
 import { useAuth } from '@/context/AuthContext';
 
 const NAV_LINKS = [
-  { label: 'Home', path: '/' },
+  { label: 'Find Mechanics', path: '/mechanics' },
+  { label: 'AI Problem Helper', path: '/help' },
   { label: 'Services', path: '/#services' },
   { label: 'How It Works', path: '/#how-it-works' },
   { label: 'Become a Mechanic', path: '/mechanic/register' },

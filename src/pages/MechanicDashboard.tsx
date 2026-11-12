@@ -11,6 +11,7 @@ import { Spinner } from '@/components/Spinner';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from '@/context/RouterContext';
 import { supabase } from '@/lib/supabase';
+import { acceptBooking, declineDirectBooking } from '@/lib/mechanics';
 import { formatPKR } from '@/lib/constants';
 import type { Booking, Mechanic, BookingStatusHistory } from '@/types';
 
@@ -68,7 +69,10 @@ export function MechanicDashboard() {
     }
   }, [loading, mechanic, navigate]);
 
-  const pendingRequests = allBookings.filter((b) => b.status === 'pending' && !b.mechanic_id);
+  const pendingRequests = allBookings
+    .filter((b) => b.status === 'pending' && (!b.mechanic_id || b.mechanic_id === user!.id))
+    // requests sent directly to me come first
+    .sort((a, b) => Number(b.mechanic_id === user!.id) - Number(a.mechanic_id === user!.id));
   const activeJobs = allBookings.filter((b) => ['accepted', 'on_the_way', 'in_progress'].includes(b.status));
   const completedJobs = allBookings.filter((b) => b.status === 'completed');
   const historyJobs = allBookings.filter((b) => ['completed', 'cancelled'].includes(b.status));
@@ -225,17 +229,27 @@ export function MechanicDashboard() {
 }
 
 function RequestCard({ booking, onAccept, onView, canAccept }: { booking: Booking; onAccept: () => void; onView: () => void; canAccept: boolean }) {
+  const { user } = useAuth();
   const [accepting, setAccepting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleAccept = async () => {
     setAccepting(true);
     setError(null);
-    const { data, error } = await supabase.rpc('claim_booking', { p_booking_id: booking.id });
+    const err = await acceptBooking(booking, user!.id);
     setAccepting(false);
-    if (error) { setError(error.message); return; }
-    if (data) onAccept();
+    if (err) { setError(err); return; }
+    onAccept();
   };
+
+  const handleDecline = async () => {
+    setAccepting(true);
+    const err = await declineDirectBooking(booking.id, user!.id);
+    setAccepting(false);
+    if (err) { setError(err); return; }
+    onAccept();
+  };
+  const isDirect = booking.mechanic_id === user?.id;
 
   const customerName = (booking.customer_profile as unknown as { full_name: string } | null)?.full_name ?? 'Customer';
   const customerPhone = (booking.customer_profile as unknown as { phone: string | null } | null)?.phone ?? booking.customer_phone;
@@ -248,6 +262,7 @@ function RequestCard({ booking, onAccept, onView, canAccept }: { booking: Bookin
           <div className="flex items-center gap-2">
             <span className="font-mono text-xs font-semibold text-navy-400">{booking.booking_ref}</span>
             <StatusBadge status={booking.status} />
+            {isDirect && <span className="badge bg-orange-500 text-white">Sent to you</span>}
           </div>
           <h3 className="mt-1.5 text-sm font-semibold text-navy-700">{booking.service?.name}</h3>
           <div className="mt-2 grid grid-cols-2 gap-2 text-xs text-navy-400">
@@ -268,6 +283,9 @@ function RequestCard({ booking, onAccept, onView, canAccept }: { booking: Bookin
             </button>
           ) : (
             <span className="text-xs text-navy-300">Not available to accept</span>
+          )}
+          {isDirect && (
+            <button onClick={handleDecline} disabled={accepting} className="text-xs font-medium text-red-600 hover:underline">Decline</button>
           )}
           <button onClick={onView} className="text-xs font-medium text-navy-500 hover:text-orange-600">Details →</button>
         </div>

@@ -58,7 +58,7 @@ export function Footer() {
               </li>
               <li className="flex items-start gap-3">
                 <Mail className="mt-0.5 h-4 w-4 text-orange-400" />
-                <span>support@mechanicmate.pk</span>
+                <span>support@gaarifix.pk</span>
               </li>
               <li className="flex items-start gap-3">
                 <MapPin className="mt-0.5 h-4 w-4 text-orange-400" />
@@ -69,7 +69,7 @@ export function Footer() {
         </div>
 
         <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-navy-600 pt-6 text-xs text-navy-300 sm:flex-row">
-          <p>&copy; {year} MechanicMate. All rights reserved.</p>
+          <p>&copy; {year} GaariFix. All rights reserved.</p>
           <div className="flex gap-6">
             <a href="#" className="transition-colors hover:text-orange-400">Privacy Policy</a>
             <a href="#" className="transition-colors hover:text-orange-400">Terms of Service</a>

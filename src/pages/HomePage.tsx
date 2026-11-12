@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import {
-  MapPin, ChevronDown, ArrowRight, ShieldCheck, BadgeCheck, Home,
-  Star, CalendarCheck, Wrench, Clock, Users, ThumbsUp, Car,
+  MapPin, ChevronDown, ArrowRight, ShieldCheck, BadgeCheck, Home, Sparkles, Search,
+  Star, Clock, Users, ThumbsUp,
 } from 'lucide-react';
 import { PublicNavbar } from '@/components/PublicNavbar';
 import { Footer } from '@/components/Footer';
@@ -15,19 +15,19 @@ const HERO_IMAGE = 'https://images.pexels.com/photos/4116221/pexels-photo-411622
 const MECHANIC_IMAGE = 'https://images.pexels.com/photos/4489776/pexels-photo-4489776.jpeg?auto=compress&cs=tinysrgb&w=1200';
 
 const HOW_IT_WORKS = [
-  { icon: Car, title: 'Select your vehicle and service', desc: 'Tell us what you drive and what it needs.' },
-  { icon: Wrench, title: 'Describe your car problem', desc: 'Share symptoms and optional photos so the mechanic comes prepared.' },
-  { icon: MapPin, title: 'Choose your location and time', desc: 'Home, office or roadside — pick a slot that suits you.' },
-  { icon: BadgeCheck, title: 'Receive a mechanic confirmation', desc: 'A verified mechanic accepts your request.' },
-  { icon: ThumbsUp, title: 'Get your car repaired', desc: 'Your mechanic arrives and gets you back on the road.' },
+  { icon: Sparkles, title: 'Tell AI what is wrong', desc: 'Type or speak in Urdu or English — get the likely cause and rough cost.' },
+  { icon: Search, title: 'Compare mechanics', desc: 'See verified mechanics near you with real ratings, reviews and experience.' },
+  { icon: Star, title: 'Choose the one you trust', desc: 'Pick by rating, area or service — your choice, not ours.' },
+  { icon: MapPin, title: 'Book location and time', desc: 'Home, office or roadside — pick a slot that suits you.' },
+  { icon: ThumbsUp, title: 'Get fixed, then rate', desc: 'Your rating helps the next car owner choose well.' },
 ];
 
 const WHY_CHOOSE = [
   { icon: ShieldCheck, title: 'Verified Mechanics', desc: 'Every mechanic is identity-checked and skill-reviewed before joining.' },
+  { icon: Sparkles, title: 'AI Problem Helper', desc: 'Describe the problem in Urdu or English and know what you need before you book.' },
   { icon: BadgeCheck, title: 'Transparent Estimated Prices', desc: 'See starting prices upfront with no hidden surprises.' },
   { icon: Home, title: 'Home & Office Service', desc: 'We come to you — no workshop visit required.' },
   { icon: Star, title: 'Customer Reviews', desc: 'Real ratings from real customers after every job.' },
-  { icon: CalendarCheck, title: 'Convenient Online Booking', desc: 'Book in minutes from your phone, any time.' },
   { icon: Clock, title: 'Immediate Assistance', desc: 'Stuck on the road? Request emergency help right away.' },
 ];
 
@@ -36,6 +36,7 @@ export function HomePage() {
   const [services, setServices] = useState<Service[]>([]);
   const [city, setCity] = useState<string>(PAKISTAN_CITIES[0]);
   const [cityOpen, setCityOpen] = useState(false);
+  const [problem, setProblem] = useState('');
 
   useEffect(() => {
     supabase
@@ -64,10 +65,10 @@ export function HomePage() {
               <MapPin className="h-4 w-4" /> Now serving major cities across Pakistan
             </span>
             <h1 className="mt-6 text-4xl font-bold leading-tight text-white sm:text-5xl lg:text-6xl">
-              Car Trouble? Your Mechanic Is Just a Booking Away.
+              Car Broke Down? Find a Top-Rated Mechanic Near You.
             </h1>
             <p className="mt-5 text-lg leading-relaxed text-navy-100">
-              Book trusted mechanics who come directly to your home, office or roadside location.
+              Compare verified mechanics by rating and area, ask our AI what's wrong, and book the one you trust — at home, office or roadside.
             </p>
 
             {/* Location selector */}
@@ -96,18 +97,32 @@ export function HomePage() {
             </div>
 
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <button onClick={() => navigate('/signup')} className="btn-primary text-base px-6 py-3.5">
-                Book a Mechanic <ArrowRight className="h-5 w-5" />
+              <button onClick={() => navigate(`/mechanics?city=${encodeURIComponent(city)}`)} className="btn-primary text-base px-6 py-3.5">
+                <Search className="h-5 w-5" /> Find Mechanics in {city}
               </button>
               <button onClick={() => navigate('/mechanic/register')} className="btn-outline bg-white/10 text-white border-white/20 hover:bg-white/20 hover:border-white/40 px-6 py-3.5 text-base">
                 Become a Mechanic
               </button>
             </div>
 
+            <form
+              onSubmit={(e) => { e.preventDefault(); navigate('/help'); try { sessionStorage.setItem('gf-problem', problem); } catch { /* ignore */ } }}
+              className="mt-6 flex max-w-xl items-center gap-2 rounded-2xl bg-white p-2 shadow-lg"
+            >
+              <Sparkles className="ml-2 h-5 w-5 shrink-0 text-orange-500" />
+              <input
+                value={problem}
+                onChange={(e) => setProblem(e.target.value)}
+                placeholder="Ask AI: gaari start nahi ho rahi…"
+                className="min-w-0 flex-1 bg-transparent px-1 py-2 text-sm text-navy-700 outline-none placeholder:text-navy-300"
+              />
+              <button type="submit" className="btn-secondary px-4 py-2.5">Ask AI</button>
+            </form>
+
             <div className="mt-10 flex flex-wrap gap-x-8 gap-y-3 text-sm text-navy-200">
               <span className="flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-orange-400" /> Verified professionals</span>
               <span className="flex items-center gap-2"><Clock className="h-4 w-4 text-orange-400" /> On-time service</span>
-              <span className="flex items-center gap-2"><Users className="h-4 w-4 text-orange-400" /> 500+ mechanics</span>
+              <span className="flex items-center gap-2"><Star className="h-4 w-4 text-orange-400" /> Real customer ratings</span>
             </div>
           </div>
         </div>
@@ -139,9 +154,9 @@ export function HomePage() {
                       <p className="text-sm font-bold text-navy-700">{formatPKR(service.starting_price)}</p>
                     </div>
                     <button
-                      onClick={() => navigate('/signup')}
+                      onClick={() => navigate(`/mechanics?service=${service.slug}`)}
                       className="flex h-8 w-8 items-center justify-center rounded-lg bg-navy-50 text-navy-500 transition-colors group-hover:bg-orange-500 group-hover:text-white"
-                      aria-label={`Book ${service.name}`}
+                      aria-label={`Find mechanics for ${service.name}`}
                     >
                       <ArrowRight className="h-4 w-4" />
                     </button>
@@ -156,7 +171,7 @@ export function HomePage() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <span className="text-sm font-semibold uppercase tracking-wider text-orange-500">Simple Process</span>
-            <h2 className="mt-2 text-3xl font-bold text-navy-700 sm:text-4xl">How MechanicMate Works</h2>
+            <h2 className="mt-2 text-3xl font-bold text-navy-700 sm:text-4xl">How GaariFix Works</h2>
             <p className="mx-auto mt-3 max-w-2xl text-navy-400">Get your car fixed in five simple steps.</p>
           </div>
 
@@ -181,7 +196,7 @@ export function HomePage() {
       <section className="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8">
         <div className="text-center">
           <span className="text-sm font-semibold uppercase tracking-wider text-orange-500">Why Choose Us</span>
-          <h2 className="mt-2 text-3xl font-bold text-navy-700 sm:text-4xl">The MechanicMate Advantage</h2>
+          <h2 className="mt-2 text-3xl font-bold text-navy-700 sm:text-4xl">The GaariFix Advantage</h2>
           <p className="mx-auto mt-3 max-w-2xl text-navy-400">We make car repair trustworthy, transparent and convenient.</p>
         </div>
 
@@ -210,7 +225,7 @@ export function HomePage() {
           <div className="max-w-xl">
             <h2 className="text-3xl font-bold text-white sm:text-4xl">Are You a Professional Mechanic?</h2>
             <p className="mt-4 text-lg leading-relaxed text-navy-100">
-              Join MechanicMate to receive more customers, grow your reputation and earn more — all while working on your own schedule.
+              Join GaariFix to receive more customers, grow your reputation and earn more — all while working on your own schedule.
             </p>
             <ul className="mt-6 flex flex-wrap gap-x-6 gap-y-2 text-sm text-navy-200">
               <li className="flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-orange-400" /> Get verified badge</li>
