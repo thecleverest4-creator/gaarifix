@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import type { Mechanic } from '@/types';
+import { DEMO_MECHANICS } from '@/lib/demoMechanics';
 
 /** Only public, non-sensitive columns (no phone/CNIC) for browsing. */
 export const PUBLIC_MECHANIC_COLS =
@@ -8,13 +9,18 @@ export const PUBLIC_MECHANIC_COLS =
 export type PublicMechanic = Omit<Mechanic, 'phone' | 'email' | 'cnic_document_url' | 'total_earnings' | 'updated_at'>;
 
 export async function fetchMechanics(): Promise<PublicMechanic[]> {
-  const { data } = await supabase
+  // Never leave the page stuck: give up after 8 seconds and fall back to the sample list.
+  const timeout = new Promise<null>((r) => setTimeout(() => r(null), 8000));
+  const query = supabase
     .from('mechanics')
     .select(PUBLIC_MECHANIC_COLS)
     .eq('verification_status', 'approved')
     .eq('is_suspended', false)
-    .order('rating_avg', { ascending: false });
-  return (data ?? []) as PublicMechanic[];
+    .order('rating_avg', { ascending: false })
+    .then(({ data }) => (data ?? []) as PublicMechanic[]);
+  const real = await Promise.race([query, timeout]).catch(() => null);
+  // Until real mechanics are approved, show the sample list so customers can see how it works.
+  return real && real.length ? real : DEMO_MECHANICS;
 }
 
 /** Ranks mechanics: available first, then by rating (weighted by number of reviews), then experience. */

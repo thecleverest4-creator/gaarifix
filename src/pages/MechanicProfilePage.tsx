@@ -10,6 +10,7 @@ import { supabase } from '@/lib/supabase';
 import { SPECIALIZATION_OPTIONS, formatPKR } from '@/lib/constants';
 import { PUBLIC_MECHANIC_COLS, initials, type PublicMechanic } from '@/lib/mechanics';
 import type { Review, Service } from '@/types';
+import { DEMO_MECHANICS, demoReviews, isDemoMechanic } from '@/lib/demoMechanics';
 
 export function MechanicProfilePage({ mechanicId }: { mechanicId: string }) {
   const { navigate } = useRouter();
@@ -21,6 +22,14 @@ export function MechanicProfilePage({ mechanicId }: { mechanicId: string }) {
 
   useEffect(() => {
     (async () => {
+      const demo = DEMO_MECHANICS.find((d) => d.id === mechanicId);
+      if (demo) {
+        setM(demo);
+        setReviews(demoReviews(demo));
+        const { data: sv } = await supabase.from('services').select('*').eq('is_active', true);
+        setServices((sv ?? []) as Service[]);
+        return;
+      }
       const { data } = await supabase.from('mechanics').select(PUBLIC_MECHANIC_COLS).eq('id', mechanicId).maybeSingle();
       const mech = (data as PublicMechanic | null) ?? null;
       setM(mech);
@@ -61,8 +70,13 @@ export function MechanicProfilePage({ mechanicId }: { mechanicId: string }) {
     );
 
   const specs = m.specializations.length ? m.specializations : SPECIALIZATION_OPTIONS.map((s) => s.slug);
-  const myServices = services.filter((s) => specs.includes(s.slug));
+  const myServices = services.length
+    ? services.filter((s) => specs.includes(s.slug))
+    : SPECIALIZATION_OPTIONS.filter((o) => specs.includes(o.slug)).map((o) => ({ id: o.slug, slug: o.slug, name: o.label, starting_price: 0 }) as unknown as Service);
   const wa = phone ? phone.replace(/\D/g, '').replace(/^0/, '92') : null;
+  const demo = isDemoMechanic(m);
+  const bookBase = (service?: string) =>
+    demo ? `/book${service ? `?service=${service}` : ''}` : `/book?mechanic=${m.user_id}${service ? `&service=${service}` : ''}`;
   const breakdown = [5, 4, 3, 2, 1].map((n) => ({ n, c: reviews.filter((r) => r.rating === n).length }));
 
   return (
@@ -84,7 +98,7 @@ export function MechanicProfilePage({ mechanicId }: { mechanicId: string }) {
               )}
               <div className="flex-1">
                 <h1 className="flex flex-wrap items-center gap-2 text-2xl font-bold text-navy-700">
-                  {m.workshop_name || m.full_name} <BadgeCheck className="h-6 w-6 text-orange-500" />
+                  {m.workshop_name || m.full_name} {!demo && <BadgeCheck className="h-6 w-6 text-orange-500" />}
                 </h1>
                 {m.workshop_name && <p className="text-navy-400">{m.full_name}</p>}
                 <p className="mt-2 flex items-center gap-2">
@@ -116,8 +130,8 @@ export function MechanicProfilePage({ mechanicId }: { mechanicId: string }) {
                   <div key={s.id} className="flex items-center justify-between gap-3 py-3">
                     <span className="flex items-center gap-2 font-medium text-navy-700"><Wrench className="h-4 w-4 text-orange-500" /> {s.name}</span>
                     <span className="flex items-center gap-3">
-                      <span className="text-sm text-navy-500">from {formatPKR(s.starting_price)}</span>
-                      <button onClick={() => navigate(`/book?mechanic=${m.user_id}&service=${s.slug}`)} className="btn-outline px-3 py-1.5 text-xs">Book</button>
+                      {s.starting_price > 0 && <span className="text-sm text-navy-500">from {formatPKR(s.starting_price)}</span>}
+                      <button onClick={() => navigate(bookBase(s.slug))} className="btn-outline px-3 py-1.5 text-xs">Book</button>
                     </span>
                   </div>
                 ))}
@@ -156,12 +170,20 @@ export function MechanicProfilePage({ mechanicId }: { mechanicId: string }) {
 
           <aside className="lg:sticky lg:top-24 lg:self-start">
             <div className="card space-y-3 p-5">
-              <p className="flex items-center gap-2 font-semibold text-navy-700"><ShieldCheck className="h-5 w-5 text-orange-500" /> Verified by GaariFix</p>
-              <p className="text-sm text-navy-400">CNIC checked. Ratings come only from customers who booked this mechanic.</p>
-              <button onClick={() => navigate(`/book?mechanic=${m.user_id}`)} className="btn-primary w-full py-3.5 text-base">
+              {!demo && (
+                <>
+                  <p className="flex items-center gap-2 font-semibold text-navy-700"><ShieldCheck className="h-5 w-5 text-orange-500" /> Verified by GaariFix</p>
+                  <p className="text-sm text-navy-400">CNIC checked. Ratings come only from customers who booked this mechanic.</p>
+                </>
+              )}
+              <button onClick={() => navigate(bookBase())} className="btn-primary w-full py-3.5 text-base">
                 <CalendarCheck className="h-5 w-5" /> Book this mechanic
               </button>
-              {profile && phone ? (
+              {demo ? (
+                <p className="rounded-xl bg-orange-50 p-3 text-xs text-navy-600">
+                  Sample profile. Your request will go to the first available verified mechanic in your city.
+                </p>
+              ) : profile && phone ? (
                 <div className="grid grid-cols-2 gap-2">
                   <a href={`tel:${phone}`} className="btn-secondary px-3"><Phone className="h-4 w-4" /> Call</a>
                   <a href={`https://wa.me/${wa}?text=${encodeURIComponent('Assalam o Alaikum, I found you on GaariFix and need help with my car.')}`} target="_blank" rel="noreferrer" className="btn-primary px-3">

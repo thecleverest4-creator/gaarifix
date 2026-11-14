@@ -6,6 +6,7 @@ import { MechanicCard } from '@/components/MechanicCard';
 import { useRouter } from '@/context/RouterContext';
 import { useAuth } from '@/context/AuthContext';
 import { PAKISTAN_CITIES, SPECIALIZATION_OPTIONS } from '@/lib/constants';
+import { isDemoMechanic } from '@/lib/demoMechanics';
 import { fetchMechanics, rankMechanics, type PublicMechanic } from '@/lib/mechanics';
 
 type Sort = 'best' | 'rating' | 'reviews' | 'experience';
@@ -153,6 +154,12 @@ export function FindMechanicsPage() {
           </div>
         </div>
 
+        {all && all.length > 0 && isDemoMechanic(all[0]) && (
+          <p className="mt-4 rounded-xl border border-orange-200 bg-orange-50 px-4 py-3 text-sm text-navy-600">
+            These are sample mechanics while GaariFix onboards verified mechanics in your city. A booking from here goes to the
+            first available verified mechanic.
+          </p>
+        )}
         <div className="mt-6 grid gap-6 lg:grid-cols-[280px_1fr]">
           <aside className={`${showFilters ? 'block' : 'hidden'} card h-fit p-5 lg:block`}>{filters}</aside>
           <div>

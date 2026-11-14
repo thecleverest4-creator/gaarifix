@@ -15,8 +15,11 @@ type Tab = 'overview' | 'vehicles' | 'bookings' | 'profile';
 
 export function CustomerDashboard() {
   const { profile, user, refreshProfile } = useAuth();
-  const { navigate } = useRouter();
-  const [tab, setTab] = useState<Tab>('overview');
+  const { navigate, path } = useRouter();
+  // The tab comes from the URL, so the sidebar links and the browser back button both work.
+  const seg = path.slice('/dashboard'.length).replace(/^\//, '').split('/')[0];
+  const tab: Tab = (['vehicles', 'bookings', 'profile'] as string[]).includes(seg) ? (seg as Tab) : 'overview';
+  const setTab = (t: Tab) => navigate(t === 'overview' ? '/dashboard' : `/dashboard/${t}`);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);

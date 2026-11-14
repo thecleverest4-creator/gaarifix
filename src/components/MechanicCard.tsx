@@ -3,11 +3,15 @@ import { useRouter } from '@/context/RouterContext';
 import { SPECIALIZATION_OPTIONS } from '@/lib/constants';
 import { initials, type PublicMechanic } from '@/lib/mechanics';
 import { Stars } from '@/components/Stars';
+import { isDemoMechanic } from '@/lib/demoMechanics';
 
 export function MechanicCard({ m, service }: { m: PublicMechanic; service?: string }) {
   const { navigate } = useRouter();
   const specLabel = (slug: string) => SPECIALIZATION_OPTIONS.find((s) => s.slug === slug)?.label ?? slug;
-  const bookUrl = `/book?mechanic=${m.user_id}${service ? `&service=${service}` : ''}`;
+  // A sample mechanic can't take a booking, so it becomes an open request any real mechanic can accept.
+  const bookUrl = isDemoMechanic(m)
+    ? `/book${service ? `?service=${service}` : ''}`
+    : `/book?mechanic=${m.user_id}${service ? `&service=${service}` : ''}`;
   return (
     <div className="card flex flex-col p-5 hover:shadow-cardHover">
       <div className="flex items-start gap-4">
@@ -20,8 +24,8 @@ export function MechanicCard({ m, service }: { m: PublicMechanic; service?: stri
         )}
         <div className="min-w-0 flex-1">
           <p className="flex items-center gap-1 font-semibold text-navy-700">
-            <span className="truncate">{m.workshop_name || m.full_name}</span>
-            <BadgeCheck className="h-4 w-4 shrink-0 text-orange-500" aria-label="Verified" />
+            <span className="leading-snug">{m.workshop_name || m.full_name}</span>
+            {!isDemoMechanic(m) && <BadgeCheck className="h-4 w-4 shrink-0 text-orange-500" aria-label="Verified" />}
           </p>
           {m.workshop_name && <p className="truncate text-xs text-navy-400">{m.full_name}</p>}
           <p className="mt-1 flex items-center gap-1.5 text-sm">
@@ -29,10 +33,10 @@ export function MechanicCard({ m, service }: { m: PublicMechanic; service?: stri
             <b className="text-navy-700">{Number(m.rating_avg).toFixed(1)}</b>
             <span className="text-navy-300">({m.rating_count})</span>
           </p>
+          <span className={`badge mt-1.5 ${m.is_available ? 'bg-navy-700 text-white' : 'bg-gray-100 text-navy-400'}`}>
+            {m.is_available ? 'Available' : 'Busy'}
+          </span>
         </div>
-        <span className={`badge shrink-0 ${m.is_available ? 'bg-navy-700 text-white' : 'bg-gray-100 text-navy-400'}`}>
-          {m.is_available ? 'Available' : 'Busy'}
-        </span>
       </div>
       <div className="mt-4 space-y-1.5 text-sm text-navy-500">
         <p className="flex items-center gap-2">

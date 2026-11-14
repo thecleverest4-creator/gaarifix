@@ -19,8 +19,11 @@ type Tab = 'overview' | 'requests' | 'active' | 'history' | 'profile';
 
 export function MechanicDashboard() {
   const { user, profile, refreshProfile } = useAuth();
-  const { navigate } = useRouter();
-  const [tab, setTab] = useState<Tab>('overview');
+  const { navigate, path } = useRouter();
+  // The tab comes from the URL, so the sidebar links and the browser back button both work.
+  const seg = path.slice('/mechanic/dashboard'.length).replace(/^\//, '').split('/')[0];
+  const tab: Tab = (['requests', 'active', 'history', 'profile'] as string[]).includes(seg) ? (seg as Tab) : 'overview';
+  const setTab = (t: Tab) => navigate(t === 'overview' ? '/mechanic/dashboard' : `/mechanic/dashboard/${t}`);
   const [mechanic, setMechanic] = useState<Mechanic | null>(null);
   const [allBookings, setAllBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);

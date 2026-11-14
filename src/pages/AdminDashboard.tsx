@@ -19,8 +19,11 @@ type Tab = 'overview' | 'mechanics' | 'bookings' | 'customers' | 'services';
 
 export function AdminDashboard() {
   const { user, profile } = useAuth();
-  const { navigate } = useRouter();
-  const [tab, setTab] = useState<Tab>('overview');
+  const { navigate, path } = useRouter();
+  // The tab comes from the URL, so the sidebar links and the browser back button both work.
+  const seg = path.slice('/admin'.length).replace(/^\//, '').split('/')[0];
+  const tab: Tab = (['mechanics', 'bookings', 'customers', 'services'] as string[]).includes(seg) ? (seg as Tab) : 'overview';
+  const setTab = (t: Tab) => navigate(t === 'overview' ? '/admin' : `/admin/${t}`);
   const [loading, setLoading] = useState(true);
 
   const [mechanics, setMechanics] = useState<Mechanic[]>([]);
